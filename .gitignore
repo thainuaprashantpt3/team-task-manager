@@ -1,22 +1,9 @@
-node_modules/
-.env
-.DS_Store
-*.log
-dist/
-build/# Dependencies
-node_modules/
-client/node_modules/
-server/node_modules/
-
-# Environment files
+node_modules
+client/node_modules
+server/node_modules
 .env
 server/.env
 client/.env
 client/.env.production
-
-# Build output
-client/dist/
-
-# OS files
 .DS_Store
 *.log
