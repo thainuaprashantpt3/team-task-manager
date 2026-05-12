@@ -98,116 +98,97 @@
 
 
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const path = require('path');
+const express    = require('express');
+const cors       = require('cors');
+const helmet     = require('helmet');
+const morgan     = require('morgan');
+const rateLimit  = require('express-rate-limit');
+const path       = require('path');
 require('dotenv').config();
 
-const connectDB     = require('./config/db');
-const errorHandler  = require('./middleware/errorHandler');
-const authRoutes    = require('./routes/authRoutes');
-const userRoutes    = require('./routes/userRoutes');
-const projectRoutes = require('./routes/projectRoutes');
-const taskRoutes    = require('./routes/taskRoutes');
+const connectDB      = require('./config/db');
+const errorHandler   = require('./middleware/errorHandler');
+const authRoutes     = require('./routes/authRoutes');
+const userRoutes     = require('./routes/userRoutes');
+const projectRoutes  = require('./routes/projectRoutes');
+const taskRoutes     = require('./routes/taskRoutes');
 
 const app = express();
 connectDB();
 
-// // ── CORS — must be before helmet and all routes ────────────────────────────
-// const allowedOrigins = process.env.NODE_ENV === 'production'
-//   ? [process.env.CLIENT_URL]
-//   : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
-
-// app.use(cors({
-//   origin: (origin, cb) => {
-//     // Allow requests with no origin (mobile apps, Postman, curl)
-//     if (!origin) return cb(null, true);
-//     if (allowedOrigins.includes(origin)) return cb(null, true);
-//     cb(new Error(`CORS blocked: ${origin}`));
-//   },
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-//   optionsSuccessStatus: 204,
-// }));
-
-const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
-
-// Sanitize request data — prevent NoSQL injection ($where, $gt attacks)
-app.use(mongoSanitize());
-
-// Sanitize user input — strip HTML/script tags from req.body
-app.use(xss());
-
-
-// CORS: allow only your Railway frontend URL in production
+// ── CORS ────────────────────────────────────────────────────────────────────
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [process.env.CLIENT_URL]                         // e.g. https://taskflow.up.railway.app
-  : ['http://localhost:5173', 'http://localhost:3000'];
+  ? [process.env.CLIENT_URL]
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow server-to-server calls (Postman, Railway health checks) with no origin
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin) return cb(null, true);
+    if (process.env.NODE_ENV !== 'production') return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
     cb(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Handle preflight OPTIONS requests explicitly
 app.options('*', cors());
 
-// ── Security ───────────────────────────────────────────────────────────────
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+// ── Security & parsing ───────────────────────────────────────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false,
+}));
 app.use(express.json({ limit: '10kb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// ── Rate Limiters ──────────────────────────────────────────────────────────
+// ── Rate limiters ────────────────────────────────────────────────────────────
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many login attempts. Try again in 15 minutes.' },
-  skip: () => process.env.NODE_ENV === 'development',
+  message: { success: false, message: 'Too many attempts. Try again in 15 minutes.' },
+  skip: () => process.env.NODE_ENV !== 'production',
 });
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many requests. Please slow down.' },
-  skip: () => process.env.NODE_ENV === 'development',
+  message: { success: false, message: 'Too many requests.' },
+  skip: () => process.env.NODE_ENV !== 'production',
 });
 
-// ── Routes ─────────────────────────────────────────────────────────────────
+// ── API routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth',     authLimiter, authRoutes);
 app.use('/api/users',    apiLimiter,  userRoutes);
 app.use('/api/projects', apiLimiter,  projectRoutes);
 app.use('/api/tasks',    apiLimiter,  taskRoutes);
 
+// ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) =>
-  res.json({ success: true, env: process.env.NODE_ENV, ts: new Date().toISOString() })
+  res.json({
+    success: true,
+    env:     process.env.NODE_ENV,
+    ts:      new Date().toISOString(),
+  })
 );
 
-// ── Serve React in production ──────────────────────────────────────────────
+// ── Serve React in production ─────────────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
+  const distPath = path.join(__dirname, '../client/dist');
+
+  app.use(express.static(distPath));
+
   app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
-    }
+    if (req.path.startsWith('/api')) return res.status(404).json({ success: false, message: 'Route not found' });
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
+// ── Error handler ─────────────────────────────────────────────────────────────
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT} [${process.env.NODE_ENV}]`)
+  console.log(`Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`)
 );
