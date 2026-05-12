@@ -108,6 +108,8 @@ import TeamLogs from './pages/Admin/TeamLogs';
 
 import Login   from './pages/Auth/Login';
 import Signup  from './pages/Auth/Signup';
+import AdminLogin   from './pages/Auth/AdminLogin';
+import AdminSignup  from './pages/Auth/AdminSignup';
 
 import AdminDashboard  from './pages/Admin/Dashboard';
 import Members         from './pages/Admin/Members';
@@ -132,6 +134,11 @@ function AppRoutes() {
       <Route path="/login"    element={<Login />} />
       <Route path="/register" element={<Signup />} />
 
+      {/* ── Secret admin routes ──────────────────────────── */}
+      <Route path="/admin-1"          element={<AdminLogin />} />
+      <Route path="/admin-1/register" element={<AdminSignup />} />
+
+          {/* ── Authenticated routes ─────────────────────────── */}
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard"       element={<DashboardRouter />} />
