@@ -15,7 +15,7 @@ const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes    = require('./routes/taskRoutes');
 
 const app = express();
-app.set("trust proxy", 1);
+
 connectDB();
 
 
