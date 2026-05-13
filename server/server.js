@@ -2,7 +2,7 @@ const express   = require('express');
 const cors      = require('cors');
 const helmet    = require('helmet');
 const morgan    = require('morgan');
-
+const rateLimit = require('express-rate-limit');
 const path      = require('path');
 const fs        = require('fs');
 require('dotenv').config();
@@ -18,7 +18,7 @@ const app = express();
 app.set("trust proxy", 1);
 connectDB();
 
-const rateLimit = require('express-rate-limit');
+
 
 // ── Static files FIRST — before helmet ───────────────────────────────────────
 const distPath  = path.resolve(__dirname, '..', 'client', 'dist');
@@ -35,7 +35,7 @@ if (fs.existsSync(distPath)) {
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: true ,
+  origin: true,
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
