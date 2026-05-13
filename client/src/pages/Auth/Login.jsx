@@ -87,7 +87,7 @@ export default function Login() {
             </div>
           ))}
           <p className="text-indigo-300 text-xs mt-6 pt-4 border-t border-white/10">
-            © 2025 Ethera AI · Trusted by 500+ teams worldwide
+            © 2026 Ethera AI · Trusted by 500+ teams worldwide
           </p>
         </div>
       </div>
@@ -187,7 +187,7 @@ export default function Login() {
             <i className="ti ti-info-circle text-amber-600 text-sm mt-0.5 shrink-0" />
             <p className="text-xs text-amber-700 leading-relaxed">
               <span className="font-bold">Demo:</span> Use your registered member
-              credentials. Admins use the separate admin portal at <code>/admin-1</code>.
+              credentials.
             </p>
           </div>
         </div>
