@@ -231,7 +231,9 @@ const getTasks = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/tasks — admin only
+// POST /api/tasks
+// Admin: assign to any project member
+// Member: create task for their own assigned projects
 const createTask = async (req, res, next) => {
   try {
     const { title, description, project, assignedTo, priority, status, dueDate } = req.body;
@@ -239,37 +241,71 @@ const createTask = async (req, res, next) => {
     if (!title?.trim() || !project)
       return res.status(400).json({ success: false, message: 'Title and project are required.' });
 
-    // Verify project exists
     const proj = await Project.findById(project);
     if (!proj)
       return res.status(404).json({ success: false, message: 'Project not found.' });
 
-    // Verify assignee is a member of the project (if provided)
+    if (req.user.role === 'member') {
+      // Member can only create task on their assigned project
+      const isMember = proj.assignedMembers.some(
+        m => m.toString() === req.user._id.toString()
+      );
+      const isOwner = proj.owner.toString() === req.user._id.toString();
+      if (!isMember && !isOwner)
+        return res.status(403).json({
+          success: false,
+          message: 'You are not assigned to this project.',
+        });
+
+      // Member creates task assigned to themselves
+      const task = await Task.create({
+        title: title.trim(),
+        description,
+        project,
+        assignedTo:  req.user._id,
+        assignedBy:  req.user._id,
+        priority:    priority || 'medium',
+        status:      status   || 'todo',
+        dueDate,
+        logs: [],
+      });
+
+      await syncProjectProgress(project);
+
+      const populated = await Task.findById(task._id)
+        .populate('assignedTo', 'name email avatar department')
+        .populate('assignedBy', 'name')
+        .populate('project',    'title deadline');
+
+      return res.status(201).json({ success: true, data: populated });
+    }
+
+    // Admin: verify assignee is project member
     if (assignedTo) {
       const isMember = proj.assignedMembers.some(m => m.toString() === assignedTo);
       if (!isMember)
         return res.status(400).json({
           success: false,
-          message: 'Assigned user is not a member of this project. Add them to the project first.',
+          message: 'Assigned user is not a member of this project.',
         });
     }
 
     const task = await Task.create({
       title: title.trim(), description, project,
-      assignedTo: assignedTo || null,
-      priority:   priority   || 'medium',
-      status:     status     || 'todo',
+      assignedTo:  assignedTo || null,
+      assignedBy:  req.user._id,
+      priority:    priority   || 'medium',
+      status:      status     || 'todo',
       dueDate,
-      assignedBy: req.user._id,
       logs: [],
     });
 
     await syncProjectProgress(project);
 
     const populated = await Task.findById(task._id)
-      .populate('assignedTo',     'name email avatar department')
-      .populate('assignedBy',     'name')
-      .populate('project',        'title deadline');
+      .populate('assignedTo', 'name email avatar department')
+      .populate('assignedBy', 'name')
+      .populate('project',    'title deadline');
 
     res.status(201).json({ success: true, data: populated });
   } catch (err) { next(err); }

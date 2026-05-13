@@ -877,31 +877,24 @@ export default function AdminDashboard() {
               </select>
             </div>
 
-            {/* Assign to — only project members */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                Assign to
-                {taskForm.project && projectMemberList.length === 0 && (
-                  <span className="ml-2 text-yellow-600 font-normal text-xs">
-                    — no members on this project yet
-                  </span>
-                )}
-              </label>
-              <select value={taskForm.assignedTo}
-                onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))}
-                className="input"
-                disabled={!taskForm.project || projectMemberList.length === 0}>
-                <option value="">Unassigned</option>
-                {projectMemberList.map(m => (
-                  <option key={m._id} value={m._id}>{m.name}</option>
-                ))}
-              </select>
-              {taskForm.project && projectMemberList.length === 0 && (
-                <p className="text-xs text-yellow-600 mt-1">
-                  Add members to this project first before assigning tasks.
-                </p>
-              )}
-            </div>
+    
+{/* Assign to — project members with full name */}
+<div>
+  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+    Assign to
+  </label>
+  <select value={taskForm.assignedTo}
+    onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))}
+    className="input"
+    disabled={!taskForm.project || projectMemberList.length === 0}>
+    <option value="">— Unassigned —</option>
+    {projectMemberList.map(m => (
+      <option key={m._id} value={m._id}>
+        {m.name}{m.department ? ` (${m.department})` : ''}
+      </option>
+    ))}
+  </select>
+</div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>

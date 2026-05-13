@@ -37,7 +37,7 @@ const { protect, adminOnly } = require('../middleware/authMiddleware');
 const router = express.Router();
 router.use(protect);
 
-router.route('/').get(getTasks).post(adminOnly, createTask);
+router.route('/').get(getTasks).post(createTask);
 router.route('/:id').patch(updateTask).delete(adminOnly, deleteTask);
 router.get('/reports/team-logs', adminOnly, getTeamLogs); // new
 

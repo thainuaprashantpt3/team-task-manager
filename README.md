@@ -1,10 +1,10 @@
 # Team Task Manager
 
 ## Live Demo
-**URL:** 
+**URL:**   team-task-manager-production-0b65.up.railway.app
 
-**Admin:** admin@company.com / admin123  
-**Member:** member1@company.com / member123
+**Admin:** mukul@gmail.com / Mukul123456
+**Member:** riya@gmail.com / Riya123456
 
 ## Features
 - Role-based access (Admin/Member)
@@ -22,7 +22,7 @@
 
 ```bash
 # Clone
-git clone https://github.com/thainuaprashant.pt3/team-task-manager.git
+git clone https://github.com/thainuaprashantpt3/team-task-manager.git
 cd team-task-manager
 
 # Backend
