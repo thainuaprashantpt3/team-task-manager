@@ -3,6 +3,8 @@
 ## Live Demo
 **URL:**   team-task-manager-production-0b65.up.railway.app
 
+for admin login and sign up add " admin-1 " in the url 
+
 **Admin:** mukul@gmail.com / Mukul123456
 **Member:** riya@gmail.com / Riya123456
 
