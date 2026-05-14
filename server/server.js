@@ -21,8 +21,11 @@ connectDB();
 
 
 // ── Static files FIRST — before helmet ───────────────────────────────────────
-const distPath  = path.resolve(__dirname, '..', 'client', 'dist');
-const indexFile = path.resolve(distPath, 'index.html');
+// const distPath  = path.resolve(__dirname, '..', 'client', 'dist');
+// const indexFile = path.resolve(distPath, 'index.html');
+
+const distPath = path.join(__dirname, '../client/dist');
+const indexFile = path.join(distPath, 'index.html');
 
 console.log('dist exists:', fs.existsSync(distPath));
 console.log('index exists:', fs.existsSync(indexFile));
