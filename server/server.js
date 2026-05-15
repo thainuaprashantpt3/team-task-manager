@@ -18,7 +18,7 @@ const app = express();
 
 connectDB();
 
-
+app.set("trust proxy", 1);
 
 // ── Static files FIRST — before helmet ───────────────────────────────────────
 // const distPath  = path.resolve(__dirname, '..', 'client', 'dist');
