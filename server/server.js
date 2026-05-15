@@ -72,8 +72,11 @@ app.get('/api/health', (_req, res) => {
 // ── Serve React build ─────────────────────────────────────────────────────────
 // __dirname = /app/server  (Railway mein)
 // client/dist = /app/client/dist
-const distPath  = path.join(__dirname, '..', 'client', 'dist');
-const indexFile = path.join(distPath, 'index.html');
+// const distPath  = path.join(__dirname, '..', 'client', 'dist');
+// const indexFile = path.join(distPath, 'index.html');
+
+const distPath = path.resolve(__dirname, '../client/dist');
+const indexFile = path.resolve(distPath, 'index.html');
 
 console.log('=== Static file paths ===');
 console.log('distPath:', distPath);
