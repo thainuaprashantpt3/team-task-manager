@@ -2,8 +2,11 @@
   "name": "team-task-manager",
   "version": "1.0.0",
   "scripts": {
-    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client",
-    "start": "node server/server.js"
+    "build": "npm install --prefix client && npm run build --prefix client",
+    "start": "node server/server.js",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "install:all": "npm install --prefix server && npm install --prefix client"
   },
   "engines": {
     "node": ">=18.0.0"

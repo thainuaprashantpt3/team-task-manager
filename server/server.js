@@ -16,40 +16,23 @@ const taskRoutes    = require('./routes/taskRoutes');
 
 const app = express();
 
+// ── Connect DB ────────────────────────────────────────────────────────────────
 connectDB();
 
-
-
-// ── Static files FIRST — before helmet ───────────────────────────────────────
-// const distPath  = path.resolve(__dirname, '..', 'client', 'dist');
-// const indexFile = path.resolve(distPath, 'index.html');
-
-const distPath = path.join(__dirname, '../client/dist');
-const indexFile = path.join(distPath, 'index.html');
-
-console.log('dist exists:', fs.existsSync(distPath));
-console.log('index exists:', fs.existsSync(indexFile));
-
-// Serve assets BEFORE helmet so nothing blocks JS/CSS
-if (fs.existsSync(distPath)) {
-  app.use('/assets', express.static(path.join(distPath, 'assets')));
-  app.use(express.static(distPath));
-}
-
-// ── CORS ──────────────────────────────────────────────────────────────────────
+// ── CORS — production aur dev dono ke liye ───────────────────────────────────
 app.use(cors({
-  origin: true,
-//   credentials: true,
+  origin: true,              // sab origins allow — Railway same domain serve karta hai
+  credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
 }));
 app.options('*', cors());
 
-// ── Helmet — disabled CSP so it does not block JS/CSS ────────────────────────
+// ── Helmet — CSP off rakho warna JS/CSS block hoti hai ────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginResourcePolicy: false,
-  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy:       false,
+  crossOriginResourcePolicy:   false,
+  crossOriginEmbedderPolicy:   false,
 }));
 
 app.use(express.json({ limit: '10kb' }));
@@ -59,7 +42,7 @@ app.use(morgan('combined'));
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: { success: false, message: 'Too many attempts.' },
+  message: { success: false, message: 'Too many attempts. Try again in 15 minutes.' },
   skip: () => process.env.NODE_ENV !== 'production',
 });
 
@@ -70,32 +53,70 @@ const apiLimiter = rateLimit({
   skip: () => process.env.NODE_ENV !== 'production',
 });
 
-// ── API routes ────────────────────────────────────────────────────────────────
+// ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth',     authLimiter, authRoutes);
 app.use('/api/users',    apiLimiter,  userRoutes);
 app.use('/api/projects', apiLimiter,  projectRoutes);
 app.use('/api/tasks',    apiLimiter,  taskRoutes);
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get('/api/health', (_req, res) =>
-  res.json({ success: true, env: process.env.NODE_ENV, ts: new Date().toISOString() })
-);
-
-// ── React catch-all ───────────────────────────────────────────────────────────
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ success: false, message: 'Route not found.' });
-  }
-  if (fs.existsSync(indexFile)) {
-    return res.sendFile(indexFile);
-  }
-  res.status(503).send('App not built.');
+app.get('/api/health', (_req, res) => {
+  res.json({
+    success:    true,
+    env:        process.env.NODE_ENV,
+    ts:         new Date().toISOString(),
+    distExists: fs.existsSync(path.join(__dirname, '../client/dist')),
+  });
 });
 
-// ── Error handler ─────────────────────────────────────────────────────────────
+// ── Serve React build ─────────────────────────────────────────────────────────
+// __dirname = /app/server  (Railway mein)
+// client/dist = /app/client/dist
+const distPath  = path.join(__dirname, '..', 'client', 'dist');
+const indexFile = path.join(distPath, 'index.html');
+
+console.log('=== Static file paths ===');
+console.log('distPath:', distPath);
+console.log('indexFile:', indexFile);
+console.log('dist exists:', fs.existsSync(distPath));
+console.log('index exists:', fs.existsSync(indexFile));
+
+if (fs.existsSync(distPath)) {
+  // CSS, JS, images serve karo
+  app.use(express.static(distPath));
+
+  // Saari non-API requests React ko do
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ success: false, message: 'API route not found.' });
+    }
+    if (fs.existsSync(indexFile)) {
+      res.sendFile(indexFile);
+    } else {
+      res.status(503).send('Frontend build not found. Please redeploy.');
+    }
+  });
+} else {
+  // Dist nahi mila — error clearly batao
+  console.error('ERROR: client/dist NOT FOUND at:', distPath);
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.status(503).json({
+        error: 'Frontend not built',
+        distPath,
+        __dirname,
+        files: fs.existsSync(path.join(__dirname, '..'))
+          ? fs.readdirSync(path.join(__dirname, '..'))
+          : 'parent dir not found',
+      });
+    }
+  });
+}
+
+// ── Global error handler ──────────────────────────────────────────────────────
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT} [${process.env.NODE_ENV}]`)
-);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+});
