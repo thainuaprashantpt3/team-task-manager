@@ -18,7 +18,6 @@ const app = express();
 
 connectDB();
 
-app.set("trust proxy", true);
 
 // ── Static files FIRST — before helmet ───────────────────────────────────────
 // const distPath  = path.resolve(__dirname, '..', 'client', 'dist');
@@ -96,6 +95,10 @@ app.get('*', (req, res) => {
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+
+app.set("trust proxy", 1);
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
