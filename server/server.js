@@ -92,6 +92,8 @@ app.get('*', (req, res) => {
   res.status(503).send('App not built.');
 });
 
+//Error handler 
+
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.use(errorHandler);
 
